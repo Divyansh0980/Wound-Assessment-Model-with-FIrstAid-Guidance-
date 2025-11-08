@@ -1,5 +1,3 @@
-
-# flask_api.py
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from predict import WoundClassifier
@@ -7,30 +5,19 @@ import os
 from werkzeug.utils import secure_filename
 import logging
 from datetime import datetime
-
-# Initialize Flask app
 app = Flask(__name__)
 CORS(app)
-
-# Configuration
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
-
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
-
-# Create upload folder if it doesn't exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# Setup logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
-# Initialize classifier
 try:
     classifier = WoundClassifier('wound_classifier_final.h5')
     logger.info("Model loaded successfully")
@@ -141,39 +128,26 @@ def predict():
         }), 400
     
     try:
-        # Save file with secure filename
         filename = secure_filename(file.filename)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"{timestamp}_{filename}"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
-        
         logger.info(f"Processing image: {filename}")
-        
-        # Make prediction
         result = classifier.predict(filepath, description)
-        
-        # Add metadata
         result['metadata'] = {
             'filename': filename,
             'timestamp': timestamp,
             'description_provided': bool(description)
         }
-        
-        # Clean up uploaded file
         try:
             os.remove(filepath)
         except:
             pass
-        
         logger.info(f"Prediction completed: {result['wound_type']} ({result['confidence']:.1f}%)")
-        
         return jsonify(result)
-        
     except Exception as e:
         logger.error(f"Prediction error: {str(e)}")
-        
-        # Clean up file on error
         try:
             if os.path.exists(filepath):
                 os.remove(filepath)
@@ -221,19 +195,14 @@ def batch_predict():
             continue
         
         try:
-            # Save and process file
             filename = secure_filename(file.filename)
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = f"{timestamp}_{filename}"
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
-            
-            # Make prediction
             result = classifier.predict(filepath)
             result['filename'] = file.filename
             results.append(result)
-            
-            # Clean up
             os.remove(filepath)
             
         except Exception as e:
@@ -241,12 +210,10 @@ def batch_predict():
                 'filename': file.filename,
                 'error': str(e)
             })
-    
     return jsonify({
         'total': len(results),
         'results': results
     })
-
 @app.errorhandler(413)
 def request_entity_too_large(error):
     """Handle file too large error"""
