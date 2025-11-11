@@ -1,4 +1,3 @@
-# evaluate_model.py
 import tensorflow as tf
 from tensorflow import keras
 from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
@@ -9,24 +8,14 @@ import json
 from datetime import datetime
 
 def evaluate_model(model_path, test_dir, save_plots=True):
-    """
-    Comprehensive model evaluation
-    
-    Args:
-        model_path: Path to trained model
-        test_dir: Path to test dataset directory
-        save_plots: Whether to save visualization plots
-    """
     print("="*70)
     print("MODEL EVALUATION")
     print("="*70)
     
-    # Load model
     print(f"\nLoading model from: {model_path}")
     model = keras.models.load_model(model_path)
     print("✓ Model loaded successfully")
     
-    # Prepare test data
     print(f"\nLoading test data from: {test_dir}")
     test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(
         rescale=1./255
@@ -43,22 +32,18 @@ def evaluate_model(model_path, test_dir, save_plots=True):
     print(f"✓ Found {test_generator.samples} test images")
     print(f"  Classes: {list(test_generator.class_indices.keys())}")
     
-    # Get predictions
     print("\nMaking predictions...")
     predictions = model.predict(test_generator, verbose=1)
     y_pred = np.argmax(predictions, axis=1)
     y_true = test_generator.classes
     
-    # Get class names
     class_names = list(test_generator.class_indices.keys())
     
-    # Overall accuracy
     accuracy = np.mean(y_pred == y_true)
     print(f"\n{'='*70}")
     print(f"OVERALL ACCURACY: {accuracy*100:.2f}%")
     print(f"{'='*70}")
     
-    # Classification report
     print("\n" + "="*70)
     print("CLASSIFICATION REPORT")
     print("="*70)
@@ -69,21 +54,17 @@ def evaluate_model(model_path, test_dir, save_plots=True):
     )
     print(report)
     
-    # Save classification report
     report_dict = classification_report(
         y_true, y_pred,
         target_names=class_names,
         output_dict=True
     )
     
-    # Confusion matrix
     print("\n" + "="*70)
     print("CONFUSION MATRIX")
     print("="*70)
     cm = confusion_matrix(y_true, y_pred)
     print(cm)
-    
-    # Per-class metrics
     print("\n" + "="*70)
     print("PER-CLASS METRICS")
     print("="*70)
@@ -98,7 +79,6 @@ def evaluate_model(model_path, test_dir, save_plots=True):
         
         print(f"{class_name:<15} {class_accuracy*100:>8.2f}%  {precision:>8.4f}  {recall:>8.4f}  {f1:>8.4f}")
     
-    # Calculate AUC for each class
     print("\n" + "="*70)
     print("AUC SCORES (One-vs-Rest)")
     print("="*70)
@@ -112,7 +92,6 @@ def evaluate_model(model_path, test_dir, save_plots=True):
         except:
             print(f"{class_name:<15}: N/A")
     
-    # Misclassification analysis
     print("\n" + "="*70)
     print("MISCLASSIFICATION ANALYSIS")
     print("="*70)
@@ -133,7 +112,6 @@ def evaluate_model(model_path, test_dir, save_plots=True):
         print("GENERATING VISUALIZATIONS")
         print("="*70)
         
-        # 1. Confusion Matrix Heatmap
         plt.figure(figsize=(10, 8))
         sns.heatmap(
             cm, 
@@ -152,7 +130,6 @@ def evaluate_model(model_path, test_dir, save_plots=True):
         print("✓ Saved: confusion_matrix.png")
         plt.close()
         
-        # 2. Normalized Confusion Matrix
         cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         plt.figure(figsize=(10, 8))
         sns.heatmap(
@@ -172,7 +149,6 @@ def evaluate_model(model_path, test_dir, save_plots=True):
         print("✓ Saved: confusion_matrix_normalized.png")
         plt.close()
         
-        # 3. Per-class metrics bar chart
         metrics = ['precision', 'recall', 'f1-score']
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         
@@ -193,7 +169,6 @@ def evaluate_model(model_path, test_dir, save_plots=True):
         print("✓ Saved: per_class_metrics.png")
         plt.close()
         
-        # 4. Prediction confidence distribution
         plt.figure(figsize=(12, 6))
         confidence_scores = np.max(predictions, axis=1)
         correct_predictions = y_pred == y_true
@@ -212,7 +187,6 @@ def evaluate_model(model_path, test_dir, save_plots=True):
         print("✓ Saved: confidence_distribution.png")
         plt.close()
     
-    # Save evaluation results to JSON
     evaluation_results = {
         'timestamp': datetime.now().isoformat(),
         'model_path': model_path,
@@ -254,17 +228,14 @@ def evaluate_model(model_path, test_dir, save_plots=True):
 if __name__ == "__main__":
     import sys
     
-    # Default paths
     model_path = 'wound_classifier_final.h5'
     test_dir = 'wound_dataset/test'
     
-    # Check if custom paths provided
     if len(sys.argv) > 1:
         model_path = sys.argv[1]
     if len(sys.argv) > 2:
         test_dir = sys.argv[2]
     
-    # Run evaluation
     try:
         evaluate_model(model_path, test_dir, save_plots=True)
     except Exception as e:
