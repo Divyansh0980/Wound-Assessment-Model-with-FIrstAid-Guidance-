@@ -1,65 +1,33 @@
-# export_model.py
 import tensorflow as tf
 from tensorflow import keras
 import os
 
 def convert_to_tflite(model_path, output_path='wound_classifier.tflite'):
-    """
-    Convert Keras model to TensorFlow Lite for mobile deployment
-    
-    Args:
-        model_path: Path to trained Keras model
-        output_path: Path to save TFLite model
-    """
     print("="*70)
     print("CONVERTING MODEL TO TENSORFLOW LITE")
     print("="*70)
-    
-    # Load the model
     print(f"\nLoading model from: {model_path}")
     model = keras.models.load_model(model_path)
     print("✓ Model loaded successfully")
-    
-    # Convert to TFLite
     print("\nConverting to TFLite format...")
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
-    
-    # Apply optimizations
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
-    
-    # Enable quantization for smaller size
     converter.target_spec.supported_types = [tf.float16]
-    
     tflite_model = converter.convert()
-    
-    # Save the model
     with open(output_path, 'wb') as f:
         f.write(tflite_model)
-    
-    # Get file sizes
     original_size = os.path.getsize(model_path) / (1024 * 1024)
     tflite_size = os.path.getsize(output_path) / (1024 * 1024)
-    
     print(f"\n✓ TFLite model saved to: {output_path}")
     print(f"\nModel Size Comparison:")
     print(f"  Original Keras model: {original_size:.2f} MB")
     print(f"  TFLite model: {tflite_size:.2f} MB")
     print(f"  Size reduction: {(1 - tflite_size/original_size)*100:.1f}%")
-    
     print("\n" + "="*70)
     print("TFLITE CONVERSION COMPLETE")
     print("="*70)
-    
     return output_path
-
 def convert_to_tfjs(model_path, output_dir='tfjs_model'):
-    """
-    Convert Keras model to TensorFlow.js for web deployment
-    
-    Args:
-        model_path: Path to trained Keras model
-        output_dir: Directory to save TF.js model
-    """
     print("\n" + "="*70)
     print("CONVERTING MODEL TO TENSORFLOW.JS")
     print("="*70)
@@ -71,12 +39,10 @@ def convert_to_tfjs(model_path, output_dir='tfjs_model'):
         print("Install it with: pip install tensorflowjs")
         return None
     
-    # Load the model
     print(f"\nLoading model from: {model_path}")
     model = keras.models.load_model(model_path)
     print("✓ Model loaded successfully")
     
-    # Convert to TF.js
     print(f"\nConverting to TensorFlow.js format...")
     os.makedirs(output_dir, exist_ok=True)
     
@@ -88,47 +54,27 @@ def convert_to_tfjs(model_path, output_dir='tfjs_model'):
         file_path = os.path.join(output_dir, file)
         size = os.path.getsize(file_path) / 1024
         print(f"  - {file} ({size:.2f} KB)")
-    
     print("\n" + "="*70)
     print("TFJS CONVERSION COMPLETE")
     print("="*70)
-    
     return output_dir
-
 def create_tflite_inference_example(tflite_path='wound_classifier.tflite'):
-    """
-    Create example code for using TFLite model
-    
-    Args:
-        tflite_path: Path to TFLite model
-    """
-    example_code = f'''
-# Example: Using TFLite Model for Inference
-
 import numpy as np
 from PIL import Image
 import tensorflow as tf
 
-# Load TFLite model
 interpreter = tf.lite.Interpreter(model_path="{tflite_path}")
 interpreter.allocate_tensors()
-
-# Get input and output details
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
-
-# Prepare image
 def preprocess_image(image_path):
     img = Image.open(image_path).convert('RGB')
     img = img.resize((224, 224))
     img_array = np.array(img, dtype=np.float32) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
     return img_array
-
-# Make prediction
 image_path = 'wound_image.jpg'
 input_data = preprocess_image(image_path)
-
 interpreter.set_tensor(input_details[0]['index'], input_data)
 interpreter.invoke()
 
@@ -139,15 +85,7 @@ classes = ['abrasion', 'laceration', 'burn', 'puncture']
 confidence = output_data[0][predicted_class]
 
 print(f"Predicted: {{classes[predicted_class]}} ({{confidence*100:.1f}}% confidence)")
-'''
-    
-    with open('tflite_inference_example.py', 'w') as f:
-        f.write(example_code)
-    
-    print("\n✓ Created: tflite_inference_example.py")
-
-def create_tfjs_inference_example():
-    """Create example HTML/JS code for using TF.js model"""
+"
     
     html_code = '''<!DOCTYPE html>
 <html>
